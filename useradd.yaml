@@ -1,15 +1,32 @@
 ---
-- name: Create Users
+- name: Deploy application
   hosts: all
   become: yes
 
   tasks:
-    - name: Create users
-      user:
-        name: "{{ item }}"
+    - name: Install nginx
+      apt:
+        name: nginx
         state: present
-        shell: /bin/bash
-      loop:
-        - devops
-        - testuser
-        - adminuser
+        update_cache: yes
+
+    - name: Start nginx
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Deploy website
+      copy:
+        content: |
+          <html>
+          <body>
+          <h1>Deployment from AWX Successful</h1>
+          </body>
+          </html>
+        dest: /var/www/html/index.html
+
+    - name: Verify service
+      service:
+        name: nginx
+        state: started
