@@ -11,21 +11,23 @@
           - "Target Host: {{ target_host }}"
           - "Username: {{ username }}"
           - "Action: {{ user_action }}"
-          - "Group: {{ user_group }}"
+          - "Group: {{ user_group | default('N/A') }}"
 
     - name: Ensure group exists
       group:
         name: "{{ user_group }}"
         state: present
       when:
-        - user_group | length > 0
         - user_action == "create"
+        - user_group is defined
+        - user_group | length > 0
 
     - name: Create user
       user:
         name: "{{ username }}"
         groups: "{{ user_group }}"
-        append: yes
+        append: true
+        password: "{{ user_password | password_hash('sha512') }}"
         state: present
       when: user_action == "create"
 
@@ -33,21 +35,32 @@
       user:
         name: "{{ username }}"
         state: absent
-        remove: yes
+        remove: true
       when: user_action == "delete"
 
     - name: Lock user
-      command: passwd -l {{ username }}
+      user:
+        name: "{{ username }}"
+        password_lock: true
       when: user_action == "lock"
 
     - name: Unlock user
-      command: passwd -u {{ username }}
+      user:
+        name: "{{ username }}"
+        password_lock: false
       when: user_action == "unlock"
 
+    - name: Reset user password
+      user:
+        name: "{{ username }}"
+        password: "{{ user_password | password_hash('sha512') }}"
+      when: user_action == "reset_password"
+
     - name: Verify user
-      shell: id {{ username }}
+      command: id {{ username }}
       register: user_info
       ignore_errors: true
+      changed_when: false
 
     - name: Display result
       debug:
