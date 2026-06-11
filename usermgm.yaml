@@ -1,0 +1,54 @@
+---
+- name: Linux User Management Portal
+  hosts: "{{ target_host }}"
+  become: true
+
+  tasks:
+
+    - name: Show Survey Input
+      debug:
+        msg:
+          - "Target Host: {{ target_host }}"
+          - "Username: {{ username }}"
+          - "Action: {{ user_action }}"
+          - "Group: {{ user_group }}"
+
+    - name: Ensure group exists
+      group:
+        name: "{{ user_group }}"
+        state: present
+      when:
+        - user_group | length > 0
+        - user_action == "create"
+
+    - name: Create user
+      user:
+        name: "{{ username }}"
+        groups: "{{ user_group }}"
+        append: yes
+        state: present
+      when: user_action == "create"
+
+    - name: Delete user
+      user:
+        name: "{{ username }}"
+        state: absent
+        remove: yes
+      when: user_action == "delete"
+
+    - name: Lock user
+      command: passwd -l {{ username }}
+      when: user_action == "lock"
+
+    - name: Unlock user
+      command: passwd -u {{ username }}
+      when: user_action == "unlock"
+
+    - name: Verify user
+      shell: id {{ username }}
+      register: user_info
+      ignore_errors: true
+
+    - name: Display result
+      debug:
+        var: user_info.stdout
