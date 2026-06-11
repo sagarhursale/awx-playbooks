@@ -1,0 +1,42 @@
+---
+- name: Package Management Portal
+  hosts: "{{ target_host }}"
+  become: true
+
+  tasks:
+
+    - name: Display user input
+      debug:
+        msg:
+          - "Target Host : {{ target_host }}"
+          - "Package Name : {{ package_name }}"
+          - "Action : {{ package_action }}"
+
+    - name: Install package
+      package:
+        name: "{{ package_name }}"
+        state: present
+      when: package_action == "install"
+
+    - name: Remove package
+      package:
+        name: "{{ package_name }}"
+        state: absent
+      when: package_action == "remove"
+
+    - name: Update package
+      package:
+        name: "{{ package_name }}"
+        state: latest
+      when: package_action == "update"
+
+    - name: Verify package
+      command: rpm -q {{ package_name }}
+      register: pkg_result
+      ignore_errors: true
+      when: package_action != "remove"
+
+    - name: Display verification
+      debug:
+        var: pkg_result.stdout
+      when: package_action != "remove"
