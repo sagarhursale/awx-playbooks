@@ -1,0 +1,11 @@
+---
+- name: Install Package
+  hosts: "{{ target_host }}"
+  become: true
+
+  tasks:
+
+    - name: Install package
+      ansible.builtin.package:
+        name: "{{ package_name }}"
+        state: present
